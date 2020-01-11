@@ -32,7 +32,7 @@ def hello_world():
 @app.route('/image', methods=['POST'])
 def upload_image():
     if 'image' not in request.files:
-        return 'Maximum number of jobs reached. Please wait a minute and try again!', 507, {'Content-Type': 'text/plain'}
+        return 'Image missing', 404, {'Content-Type': 'text/plain'}
 
     file = request.files['image']
     file_content = BytesIO()
@@ -75,7 +75,7 @@ def job_runner():
 
 
 if __name__ == '__main__':
-    mongo_setup.global_init(True)
+    mongo_setup.global_init(False)
     scheduler.add_job(job_runner, 'interval', minutes=1, id='deep-dream-job')
     scheduler.start()
     app.run(host='0.0.0.0', port=5000)
