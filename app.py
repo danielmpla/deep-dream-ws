@@ -55,7 +55,7 @@ def get_image(id):
     job = QueueRepository.get_job_by_id(id)
 
     if not job.finished:
-        return str(job.id), 200, {'Content-Type': 'text/plain'}
+        return str(job.id), 202, {'Content-Type': 'text/plain'}
 
     image = job.computed_image
 
