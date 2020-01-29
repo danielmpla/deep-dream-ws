@@ -26,9 +26,6 @@ class TiledGradients(tf.Module):
                 tf.TensorSpec(shape=[], dtype=tf.int32),)
     )
     def __call__(self, img, tile_size=512):
-        if tile_size > img.shape[0]:
-            tile_size = 128
-
         shift_down, shift_right, img_rolled = DeepDreamWS.random_roll(img, tile_size)
 
         # Initialize the image gradients to zero.
