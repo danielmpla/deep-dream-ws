@@ -26,6 +26,9 @@ class TiledGradients(tf.Module):
                 tf.TensorSpec(shape=[], dtype=tf.int32),)
     )
     def __call__(self, img, tile_size=512):
+        if tile_size > img.shape[0]:
+            tile_size = 128
+
         shift_down, shift_right, img_rolled = DeepDreamWS.random_roll(img, tile_size)
 
         # Initialize the image gradients to zero.
@@ -143,6 +146,13 @@ class DeepDreamWS:
 
         processed_img_bytes.close()
 
+    def set_canceled(self, id):
+        job = QueueRepository.get_job_by_id(id)
+
+        job.canceled = True
+
+        job.save()
+
     @classmethod
     def calc_loss(cls, img, model):
         # Pass forward the image through the model to retrieve the activations.
@@ -181,7 +191,7 @@ class DeepDreamWS:
         return result
 
     def run_deep_dream_with_octaves(self, img, steps_per_octave=100, step_size=0.01,
-                                    octaves=range(-5, 1), octave_scale=1.3):
+                                    octaves=range(-3, 3), octave_scale=1.3):
         base_shape = tf.shape(img)
         img = tf.keras.preprocessing.image.img_to_array(img)
         img = tf.keras.applications.inception_v3.preprocess_input(img)
@@ -210,21 +220,24 @@ class DeepDreamWS:
         return shift_down, shift_right, img_rolled
 
     def run(self, id: str):
-        original_img = self.open_image(id)
+        try:
+            original_img = self.open_image(id)
 
-        img = tf.constant(np.array(original_img))
-        base_shape = tf.shape(img)[:-1]
+            img = tf.constant(np.array(original_img))
+            base_shape = tf.shape(img)[:-1]
 
-        shift_down, shift_right, img_rolled = self.random_roll(np.array(original_img), 512)
+            # shift_down, shift_right, img_rolled = self.random_roll(np.array(original_img), 128)
 
-        start = time.time()
+            start = time.time()
 
-        img = self.run_deep_dream_with_octaves(img=original_img, step_size=0.01)
+            img = self.run_deep_dream_with_octaves(img=original_img, step_size=0.01)
 
-        end = time.time()
+            end = time.time()
 
-        print(end - start)
+            print(end - start)
 
-        img = tf.image.resize(img, base_shape)
-        img = tf.image.convert_image_dtype(img / 255.0, dtype=tf.uint8)
-        self.show_and_store(img, id)
+            img = tf.image.resize(img, base_shape)
+            img = tf.image.convert_image_dtype(img / 255.0, dtype=tf.uint8)
+            self.show_and_store(img, id)
+        except Exception as e:
+            self.set_canceled(id)

@@ -54,6 +54,9 @@ def upload_image():
 def get_image(id):
     job = QueueRepository.get_job_by_id(id)
 
+    if job.canceled:
+        return 'An error occurred while processing the image!', 500, {'Content-Type': 'text/plain'}
+
     if not job.finished:
         return str(job.id), 202, {'Content-Type': 'text/plain'}
 
